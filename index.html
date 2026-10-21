@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#1B2430;--muted:#5B6675;--bg:#EDF0F4;--card:#fff;--line:#CDD4DE;--live:#E63946;--ok:#1E7F5C}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Public Sans',system-ui,sans-serif;line-height:1.5}
+  .hero{position:relative;min-height:240px;display:flex;align-items:flex-end;background:linear-gradient(135deg,#1B2430,#3A4A63) center/cover no-repeat;color:#fff}
+  .hero::before{content:"";position:absolute;inset:0;background:linear-gradient(to top,rgba(27,36,48,.92),rgba(27,36,48,.25))}
+  .hero-in{position:relative;width:100%;max-width:720px;margin:0 auto;padding:28px 20px}
+  .live{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:.85rem;background:rgba(255,255,255,.14);padding:4px 12px;border-radius:99px}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--live);animation:pulse 1.6s ease-out infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(230,57,70,.7)}100%{box-shadow:0 0 0 10px rgba(230,57,70,0)}}
+  h1{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:clamp(1.8rem,6vw,2.6rem);line-height:1.1;margin:12px 0 0}
+  main{max-width:720px;margin:-20px auto 48px;padding:0 16px;position:relative}
+  form{background:var(--card);border-radius:14px;padding:24px 20px;box-shadow:0 8px 30px rgba(27,36,48,.12)}
+  fieldset{border:0;padding:0;margin:0 0 24px}
+  legend,label.t{font-weight:600;display:block;margin-bottom:8px;padding:0}
+  .hint{color:var(--muted);font-size:.85rem;font-weight:400}
+  .opts{display:flex;flex-wrap:wrap;gap:8px}
+  .opt input{position:absolute;opacity:0;pointer-events:none}
+  .opt span{display:block;padding:10px 14px;border:1.5px solid var(--line);border-radius:10px;cursor:pointer;background:#fff;transition:background .15s,border-color .15s}
+  .opt input:checked+span{background:var(--ink);border-color:var(--ink);color:#fff}
+  .opt input:focus-visible+span{outline:3px solid var(--live);outline-offset:2px}
+  .opts.col .opt{flex:1 1 100%}
+  input[type=text],input[type=file]{width:100%;padding:12px 14px;font:inherit;border:1.5px solid var(--line);border-radius:10px}
+  input[type=text]:focus{outline:3px solid rgba(230,57,70,.35);border-color:var(--live)}
+  .err{color:var(--live);font-size:.85rem;min-height:1.2em;margin-top:6px}
+  button{width:100%;padding:14px;font:inherit;font-weight:600;font-size:1rem;color:#fff;background:var(--live);border:0;border-radius:10px;cursor:pointer}
+  button:disabled{opacity:.6;cursor:wait}
+  .done{text-align:center;padding:40px 12px}
+  .done h2{font-family:'Bricolage Grotesque',sans-serif;color:var(--ok);margin:0 0 8px}
+  .done button{background:var(--ink);margin-top:20px;max-width:280px}
+  .bar{height:10px;background:var(--line);border-radius:99px;margin-top:10px;overflow:hidden}
+  #fill{height:100%;width:0;background:var(--live);transition:width .2s}
+  [hidden]{display:none!important}
+  @media (prefers-reduced-motion:reduce){.dot{animation:none}}
+</style>
+</head>
+<body>
+<header class="hero" id="hero">
+  <div class="hero-in">
+    <span class="live"><i class="dot"></i>Praktik Live</span>
+    <h1 id="judul"></h1>
+  </div>
+</header>
+
+<main>
+  <p id="loading" style="text-align:center;padding:40px 0">Memuat form...</p>
+  <form id="form" novalidate hidden>
+    <fieldset><legend>Hari/tanggal pelaksanaan</legend><div class="opts col" id="pelaksanaan"></div></fieldset>
+    <fieldset><legend>Tempat pelaksanaan</legend><div class="opts" id="tempat"></div></fieldset>
+    <div style="margin-bottom:24px">
+      <label class="t" for="nama">Nama lengkap</label>
+      <input type="text" id="nama" autocomplete="name" placeholder="Tulis nama lengkap">
+    </div>
+    <fieldset><legend>Kelas</legend><div class="opts" id="kelas"></div></fieldset>
+    <div style="margin-bottom:24px">
+      <label class="t" for="jurusan">Jurusan</label>
+      <input type="text" id="jurusan" placeholder="Tulis jurusan">
+    </div>
+    <fieldset><legend>Asal sekolah</legend><div class="opts col" id="sekolah"></div></fieldset>
+    <div style="margin-bottom:24px">
+      <label class="t" for="video">Video praktik</label>
+      <input type="file" id="video" accept="video/*">
+      <div class="bar" id="bar" hidden><div id="fill"></div></div>
+      <div class="hint" id="pct" style="margin-top:6px" hidden></div>
+    </div>
+    <div class="err" id="err" role="alert"></div>
+    <button type="submit" id="kirim">Kirim data</button>
+  </form>
+
+  <section class="done" id="done" hidden>
+    <h2>Data berhasil dikirim</h2>
+    <p>Terima kasih, hasil praktik Anda sudah tercatat.</p>
+    <button type="button" id="lagi">Kirim data lagi</button>
+  </section>
+</main>
+
+<script>
+  // Tempel URL web app Apps Script (berakhiran /exec) di sini:
+  const API = 'https://script.google.com/macros/s/AKfycbx3HVfjp_ZWBuhYKJRIYEuoq6rh1-UfCaCe83lIU7YAL5uJW3fO5yttS3m2Jm48AK6Dyg/exec';
+  let CFG = { maxMB: 500 };
+
+  function radios(id, name, items) {
+    document.getElementById(id).innerHTML = items.map(function (v, i) {
+      return '<label class="opt"><input type="radio" name="' + name + '" value="' + v.replace(/"/g, '&quot;') + '"><span></span></label>';
+    }).join('');
+    document.querySelectorAll('#' + id + ' span').forEach(function (s, i) { s.textContent = items[i]; });
+  }
+
+  const $ = function (id) { return document.getElementById(id); };
+  const pick = function (n) { const c = document.querySelector('input[name=' + n + ']:checked'); return c ? c.value : ''; };
+
+  const CHUNK = 3 * 1024 * 1024; // kelipatan 256 KB
+  const call = async function (action, payload) {
+    const r = await fetch(API, { method: 'POST', body: JSON.stringify(Object.assign({ action: action }, payload)) });
+    return r.json();
+  };
+  const b64 = function (blob) {
+    return new Promise(function (ok, no) {
+      const r = new FileReader();
+      r.onload = function () { ok(String(r.result).split(',')[1]); };
+      r.onerror = no; r.readAsDataURL(blob);
+    });
+  };
+  function busy(on, txt) {
+    $('kirim').disabled = on; $('kirim').textContent = on ? 'Mengunggah...' : 'Kirim data';
+    $('bar').hidden = !on; $('pct').hidden = !on; if (txt) $('pct').textContent = txt;
+  }
+
+  $('form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const file = $('video').files[0];
+    const d = { pelaksanaan: pick('pelaksanaan'), tempat: pick('tempat'), nama: $('nama').value.trim(),
+      kelas: pick('kelas'), jurusan: $('jurusan').value.trim(), sekolah: pick('sekolah') };
+    let msg = '';
+    if (!d.pelaksanaan) msg = 'Pilih hari/tanggal pelaksanaan.';
+    else if (!d.tempat) msg = 'Pilih tempat pelaksanaan.';
+    else if (d.nama.length < 3) msg = 'Isi nama lengkap.';
+    else if (!d.kelas) msg = 'Pilih kelas.';
+    else if (d.jurusan.length < 2) msg = 'Isi jurusan.';
+    else if (!d.sekolah) msg = 'Pilih asal sekolah.';
+    else if (!file) msg = 'Pilih file video praktik.';
+    else if (file.type.indexOf('video/') !== 0) msg = 'File harus berupa video.';
+    else if (file.size > CFG.maxMB * 1048576) msg = 'Ukuran video maksimal ' + CFG.maxMB + ' MB.';
+    $('err').textContent = msg;
+    if (msg) return;
+
+    busy(true, 'Menyiapkan unggahan...'); $('fill').style.width = '0';
+    try {
+      const s = await call('mulai', { d: d, m: { name: file.name, type: file.type, size: file.size } });
+      if (!s.ok) throw new Error(s.message);
+      let start = 0, fileId = '';
+      while (start < file.size) {
+        const end = Math.min(start + CHUNK, file.size);
+        const r = await call('chunk', { url: s.sessionUrl, b64: await b64(file.slice(start, end)), start: start, end: end, total: file.size });
+        if (!r.ok) throw new Error(r.message);
+        if (r.fileId) fileId = r.fileId;
+        start = end;
+        const p = Math.round(start / file.size * 100);
+        $('fill').style.width = p + '%'; $('pct').textContent = 'Mengunggah ' + p + '%. Jangan tutup halaman ini.';
+      }
+      if (!fileId) throw new Error('Unggahan belum selesai. Coba lagi.');
+      $('pct').textContent = 'Menyimpan data...';
+      const f = await call('selesai', { d: d, fileId: fileId });
+      if (!f.ok) throw new Error(f.message);
+      busy(false); $('form').hidden = true; $('done').hidden = false; window.scrollTo(0, 0);
+    } catch (er) {
+      busy(false); $('err').textContent = er.message + ' Silakan coba lagi.';
+    }
+  });
+
+  $('lagi').addEventListener('click', function () {
+    $('form').reset(); $('err').textContent = '';
+    $('done').hidden = true; $('form').hidden = false;
+  });
+  function init(c) {
+    CFG = c;
+    document.title = c.judul; $('judul').textContent = c.judul;
+    if (c.fotoHeader) $('hero').style.backgroundImage = 'url("' + c.fotoHeader + '")';
+    radios('pelaksanaan', 'pelaksanaan', c.pelaksanaan);
+    radios('tempat', 'tempat', c.tempat);
+    radios('kelas', 'kelas', c.kelas);
+    radios('sekolah', 'sekolah', c.sekolah);
+    $('loading').hidden = true; $('form').hidden = false;
+  }
+  fetch(API).then(function (r) { return r.json(); }).then(init)
+    .catch(function () { $('loading').textContent = 'Gagal memuat form. Muat ulang halaman.'; });
+</script>
+</body>
+</html>
