@@ -1,80 +1,97 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<base target="_top">
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pengumpulan Hasil Praktik Live Sales</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700;800&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root{--ink:#1B2430;--muted:#5B6675;--bg:#EDF0F4;--card:#fff;--line:#CDD4DE;--live:#E63946;--ok:#1E7F5C}
+  :root{--p:#6D28D9;--pd:#4C1D95;--pl:#F3EEFF;--ink:#1E1535;--muted:#6B6485;--line:#DDD6EE;--bg:#F5F2FC;--err:#C62828;--ok:#15803D}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:'Public Sans',system-ui,sans-serif;line-height:1.5}
-  .hero{position:relative;min-height:240px;display:flex;align-items:flex-end;background:linear-gradient(135deg,#1B2430,#3A4A63) center/cover no-repeat;color:#fff}
-  .hero::before{content:"";position:absolute;inset:0;background:linear-gradient(to top,rgba(27,36,48,.92),rgba(27,36,48,.25))}
-  .hero-in{position:relative;width:100%;max-width:720px;margin:0 auto;padding:28px 20px}
-  .live{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:.85rem;background:rgba(255,255,255,.14);padding:4px 12px;border-radius:99px}
-  .dot{width:9px;height:9px;border-radius:50%;background:var(--live);animation:pulse 1.6s ease-out infinite}
-  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(230,57,70,.7)}100%{box-shadow:0 0 0 10px rgba(230,57,70,0)}}
-  h1{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:clamp(1.8rem,6vw,2.6rem);line-height:1.1;margin:12px 0 0}
-  main{max-width:720px;margin:-20px auto 48px;padding:0 16px;position:relative}
-  form{background:var(--card);border-radius:14px;padding:24px 20px;box-shadow:0 8px 30px rgba(27,36,48,.12)}
-  fieldset{border:0;padding:0;margin:0 0 24px}
-  legend,label.t{font-weight:600;display:block;margin-bottom:8px;padding:0}
+  .hero{background:linear-gradient(180deg,#2E1065,var(--pd))}
+  .hero img{display:block;width:100%;max-width:1200px;height:auto;margin:0 auto}
+  .hero.empty{height:140px}
+  main{max-width:760px;margin:28px auto 56px;padding:0 16px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:32px 28px;box-shadow:0 12px 40px rgba(76,29,149,.10)}
+  h1{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:clamp(1.5rem,4.5vw,2rem);line-height:1.15;color:var(--pd);margin:0 0 6px}
+  .sub{color:var(--muted);margin:0 0 28px;font-size:.95rem}
+  .sec{display:flex;align-items:center;gap:10px;font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:1.05rem;color:var(--pd);margin:0 0 16px;padding-top:6px;border-top:1px solid var(--line);padding-top:22px}
+  .sec:first-of-type{border-top:0;padding-top:0}
+  .sec b{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--p);color:#fff;font-size:.8rem}
+  fieldset{border:0;padding:0;margin:0 0 20px}
+  legend,label.t{font-weight:600;font-size:.92rem;display:block;margin-bottom:8px;padding:0}
   .hint{color:var(--muted);font-size:.85rem;font-weight:400}
   .opts{display:flex;flex-wrap:wrap;gap:8px}
   .opt input{position:absolute;opacity:0;pointer-events:none}
-  .opt span{display:block;padding:10px 14px;border:1.5px solid var(--line);border-radius:10px;cursor:pointer;background:#fff;transition:background .15s,border-color .15s}
-  .opt input:checked+span{background:var(--ink);border-color:var(--ink);color:#fff}
-  .opt input:focus-visible+span{outline:3px solid var(--live);outline-offset:2px}
+  .opt span{display:block;padding:10px 16px;border:1.5px solid var(--line);border-radius:10px;cursor:pointer;background:#fff;transition:background .15s,border-color .15s,color .15s}
+  .opt span:hover{border-color:var(--p);background:var(--pl)}
+  .opt input:checked+span{background:var(--p);border-color:var(--p);color:#fff}
+  .opt input:focus-visible+span{outline:3px solid #C4B5FD;outline-offset:2px}
   .opts.col .opt{flex:1 1 100%}
-  input[type=text],input[type=file]{width:100%;padding:12px 14px;font:inherit;border:1.5px solid var(--line);border-radius:10px}
-  input[type=text]:focus{outline:3px solid rgba(230,57,70,.35);border-color:var(--live)}
-  .err{color:var(--live);font-size:.85rem;min-height:1.2em;margin-top:6px}
-  button{width:100%;padding:14px;font:inherit;font-weight:600;font-size:1rem;color:#fff;background:var(--live);border:0;border-radius:10px;cursor:pointer}
-  button:disabled{opacity:.6;cursor:wait}
-  .done{text-align:center;padding:40px 12px}
-  .done h2{font-family:'Bricolage Grotesque',sans-serif;color:var(--ok);margin:0 0 8px}
-  .done button{background:var(--ink);margin-top:20px;max-width:280px}
-  .bar{height:10px;background:var(--line);border-radius:99px;margin-top:10px;overflow:hidden}
-  #fill{height:100%;width:0;background:var(--live);transition:width .2s}
+  .field{margin-bottom:20px}
+  input[type=text],input[type=file]{width:100%;padding:12px 14px;font:inherit;border:1.5px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
+  input[type=text]:focus,input[type=file]:focus{outline:3px solid #C4B5FD;border-color:var(--p)}
+  input[type=file]::file-selector-button{margin-right:12px;padding:8px 14px;border:0;border-radius:8px;background:var(--pl);color:var(--pd);font:inherit;font-weight:600;cursor:pointer}
+  .bar{height:10px;background:var(--pl);border-radius:99px;margin-top:12px;overflow:hidden}
+  #fill{height:100%;width:0;background:linear-gradient(90deg,var(--p),#A855F7);transition:width .2s}
+  .err{color:var(--err);font-size:.9rem;min-height:1.3em;margin-bottom:10px}
+  button{width:100%;padding:15px;font:inherit;font-weight:600;font-size:1rem;color:#fff;background:linear-gradient(135deg,var(--p),var(--pd));border:0;border-radius:12px;cursor:pointer;transition:transform .1s,box-shadow .2s}
+  button:hover:not(:disabled){box-shadow:0 8px 22px rgba(109,40,217,.35)}
+  button:active:not(:disabled){transform:scale(.99)}
+  button:disabled{opacity:.65;cursor:wait}
+  .done{text-align:center;padding:48px 24px}
+  .done .ck{width:64px;height:64px;border-radius:50%;background:#DCFCE7;color:var(--ok);display:grid;place-items:center;margin:0 auto 16px}
+  .done h2{font-family:'Bricolage Grotesque',sans-serif;color:var(--pd);margin:0 0 6px}
+  .done p{color:var(--muted);margin:0}
+  .done button{max-width:280px;margin-top:24px}
+  #loading{text-align:center;padding:40px 0;color:var(--muted)}
   [hidden]{display:none!important}
-  @media (prefers-reduced-motion:reduce){.dot{animation:none}}
+  @media (max-width:520px){.card{padding:24px 18px}}
 </style>
 </head>
 <body>
-<header class="hero" id="hero">
-  <div class="hero-in">
-    <span class="live"><i class="dot"></i>Praktik Live</span>
-    <h1 id="judul"></h1>
-  </div>
-</header>
+<header class="hero empty" id="hero"><img id="heroImg" alt="Pengumpulan Tugas Live Sales" hidden></header>
 
 <main>
-  <p id="loading" style="text-align:center;padding:40px 0">Memuat form...</p>
-  <form id="form" novalidate hidden>
-    <fieldset><legend>Hari/tanggal pelaksanaan</legend><div class="opts col" id="pelaksanaan"></div></fieldset>
-    <fieldset><legend>Tempat pelaksanaan</legend><div class="opts" id="tempat"></div></fieldset>
-    <div style="margin-bottom:24px">
-      <label class="t" for="nama">Nama lengkap</label>
-      <input type="text" id="nama" autocomplete="name" placeholder="Tulis nama lengkap">
-    </div>
-    <fieldset><legend>Kelas</legend><div class="opts" id="kelas"></div></fieldset>
-    <div style="margin-bottom:24px">
-      <label class="t" for="jurusan">Jurusan</label>
-      <input type="text" id="jurusan" placeholder="Tulis jurusan">
-    </div>
-    <fieldset><legend>Asal sekolah</legend><div class="opts col" id="sekolah"></div></fieldset>
-    <div style="margin-bottom:24px">
-      <label class="t" for="video">Video praktik</label>
-      <input type="file" id="video" accept="video/*">
-      <div class="bar" id="bar" hidden><div id="fill"></div></div>
-      <div class="hint" id="pct" style="margin-top:6px" hidden></div>
-    </div>
-    <div class="err" id="err" role="alert"></div>
-    <button type="submit" id="kirim">Kirim data</button>
-  </form>
+  <div class="card" id="formCard">
+    <h1 id="judul">Pengumpulan Hasil Praktik Live Sales</h1>
+    <p class="sub">Isi data dengan benar, lalu unggah video hasil praktik Anda.</p>
+    <p id="loading">Memuat form...</p>
 
-  <section class="done" id="done" hidden>
+    <form id="form" novalidate hidden>
+      <div class="sec"><b>1</b>Pelaksanaan</div>
+      <fieldset><legend>Hari/tanggal pelaksanaan</legend><div class="opts col" id="pelaksanaan"></div></fieldset>
+      <fieldset><legend>Tempat pelaksanaan</legend><div class="opts" id="tempat"></div></fieldset>
+
+      <div class="sec" style="margin-top:28px"><b>2</b>Data siswa</div>
+      <div class="field">
+        <label class="t" for="nama">Nama lengkap</label>
+        <input type="text" id="nama" autocomplete="name" placeholder="Tulis nama lengkap">
+      </div>
+      <fieldset><legend>Kelas</legend><div class="opts" id="kelas"></div></fieldset>
+      <div class="field">
+        <label class="t" for="jurusan">Jurusan</label>
+        <input type="text" id="jurusan" placeholder="Tulis jurusan">
+      </div>
+      <fieldset><legend>Asal sekolah</legend><div class="opts col" id="sekolah"></div></fieldset>
+
+      <div class="sec" style="margin-top:28px"><b>3</b>Video praktik</div>
+      <div class="field">
+        <label class="t" for="video">File video</label>
+        <input type="file" id="video" accept="video/*">
+        <div class="bar" id="bar" hidden><div id="fill"></div></div>
+        <div class="hint" id="pct" style="margin-top:8px" hidden></div>
+      </div>
+
+      <div class="err" id="err" role="alert"></div>
+      <button type="submit" id="kirim">Kirim data</button>
+    </form>
+  </div>
+
+  <section class="card done" id="done" hidden>
+    <div class="ck"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></div>
     <h2>Data berhasil dikirim</h2>
     <p>Terima kasih, hasil praktik Anda sudah tercatat.</p>
     <button type="button" id="lagi">Kirim data lagi</button>
@@ -86,15 +103,15 @@
   const API = 'https://script.google.com/macros/s/AKfycbx3HVfjp_ZWBuhYKJRIYEuoq6rh1-UfCaCe83lIU7YAL5uJW3fO5yttS3m2Jm48AK6Dyg/exec';
   let CFG = { maxMB: 500 };
 
+  const $ = function (id) { return document.getElementById(id); };
+  const pick = function (n) { const c = document.querySelector('input[name=' + n + ']:checked'); return c ? c.value : ''; };
+
   function radios(id, name, items) {
-    document.getElementById(id).innerHTML = items.map(function (v, i) {
+    $(id).innerHTML = items.map(function (v) {
       return '<label class="opt"><input type="radio" name="' + name + '" value="' + v.replace(/"/g, '&quot;') + '"><span></span></label>';
     }).join('');
     document.querySelectorAll('#' + id + ' span').forEach(function (s, i) { s.textContent = items[i]; });
   }
-
-  const $ = function (id) { return document.getElementById(id); };
-  const pick = function (n) { const c = document.querySelector('input[name=' + n + ']:checked'); return c ? c.value : ''; };
 
   const CHUNK = 3 * 1024 * 1024; // kelipatan 256 KB
   const call = async function (action, payload) {
@@ -149,7 +166,7 @@
       $('pct').textContent = 'Menyimpan data...';
       const f = await call('selesai', { d: d, fileId: fileId });
       if (!f.ok) throw new Error(f.message);
-      busy(false); $('form').hidden = true; $('done').hidden = false; window.scrollTo(0, 0);
+      busy(false); $('formCard').hidden = true; $('done').hidden = false; window.scrollTo(0, 0);
     } catch (er) {
       busy(false); $('err').textContent = er.message + ' Silakan coba lagi.';
     }
@@ -157,12 +174,17 @@
 
   $('lagi').addEventListener('click', function () {
     $('form').reset(); $('err').textContent = '';
-    $('done').hidden = true; $('form').hidden = false;
+    $('done').hidden = true; $('formCard').hidden = false;
   });
+
   function init(c) {
     CFG = c;
     document.title = c.judul; $('judul').textContent = c.judul;
-    if (c.fotoHeader) $('hero').style.backgroundImage = 'url("' + c.fotoHeader + '")';
+    if (c.fotoHeader) {
+      const img = $('heroImg');
+      img.onload = function () { img.hidden = false; $('hero').classList.remove('empty'); };
+      img.src = c.fotoHeader;
+    }
     radios('pelaksanaan', 'pelaksanaan', c.pelaksanaan);
     radios('tempat', 'tempat', c.tempat);
     radios('kelas', 'kelas', c.kelas);
