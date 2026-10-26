@@ -34,6 +34,13 @@
   input[type=text],input[type=file]{width:100%;padding:12px 14px;font:inherit;border:1.5px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
   input[type=text]:focus,input[type=file]:focus{outline:3px solid #C4B5FD;border-color:var(--p)}
   input[type=file]::file-selector-button{margin-right:12px;padding:8px 14px;border:0;border-radius:8px;background:var(--pl);color:var(--pd);font:inherit;font-weight:600;cursor:pointer}
+  .prog{background:var(--pl);border-radius:14px;padding:18px;margin-bottom:12px}
+  .pctbig{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:2.2rem;line-height:1;color:var(--pd)}
+  .pctbig.ok{color:var(--ok)}
+  .prog .bar{background:#fff}
+  .row{display:flex;gap:10px;margin-top:16px}.row button{flex:1}
+  .btn-sec{background:#fff;color:var(--pd);border:1.5px solid var(--line)}
+  button.btn-sec:hover:not(:disabled){box-shadow:none;background:var(--pl)}
   .bar{height:10px;background:var(--pl);border-radius:99px;margin-top:12px;overflow:hidden}
   #fill{height:100%;width:0;background:linear-gradient(90deg,var(--p),#A855F7);transition:width .2s}
   .err{color:var(--err);font-size:.9rem;min-height:1.3em;margin-bottom:10px}
@@ -81,12 +88,19 @@
       <div class="field">
         <label class="t" for="video">File video</label>
         <input type="file" id="video" accept="video/*">
-        <div class="bar" id="bar" hidden><div id="fill"></div></div>
-        <div class="hint" id="pct" style="margin-top:8px" hidden></div>
       </div>
 
       <div class="err" id="err" role="alert"></div>
-      <button type="submit" id="kirim">Kirim data</button>
+      <div class="prog" id="prog" hidden>
+        <div class="pctbig" id="pctbig">0%</div>
+        <div class="bar"><div id="fill"></div></div>
+        <div class="hint" id="pct" style="margin-top:8px"></div>
+        <div class="row">
+          <button type="button" class="btn-sec" id="btnBatal">Batalkan</button>
+          <button type="button" id="btnKirim" hidden>Kirim data</button>
+        </div>
+      </div>
+      <button type="submit" id="kirim">Unggah video</button>
     </form>
   </div>
 
@@ -125,11 +139,24 @@
       r.onerror = no; r.readAsDataURL(blob);
     });
   };
-  function busy(on, txt) {
-    $('kirim').disabled = on; $('kirim').textContent = on ? 'Mengunggah...' : 'Kirim data';
-    $('bar').hidden = !on; $('pct').hidden = !on; if (txt) $('pct').textContent = txt;
+  let uploading = false, state = null, runId = 0;
+  const mb = function (n) { return (n / 1048576).toFixed(1) + ' MB'; };
+  function lockForm(on) { document.querySelectorAll('#form input').forEach(function (i) { i.disabled = on; }); }
+  function setProg(p, txt, ok) {
+    $('pctbig').textContent = p + '%'; $('fill').style.width = p + '%';
+    $('pctbig').className = ok ? 'pctbig ok' : 'pctbig'; $('pct').textContent = txt;
   }
+  function resetUpload() {
+    uploading = false; state = null; lockForm(false);
+    $('prog').hidden = true; $('kirim').hidden = false;
+    $('btnKirim').hidden = true; $('btnKirim').disabled = false; $('btnKirim').textContent = 'Kirim data';
+    $('btnBatal').disabled = false; $('btnBatal').textContent = 'Batalkan';
+  }
+  window.addEventListener('beforeunload', function (e) {
+    if (uploading || state) { e.preventDefault(); e.returnValue = ''; }
+  });
 
+  // Tahap 1: unggah video (data BELUM dikirim)
   $('form').addEventListener('submit', async function (e) {
     e.preventDefault();
     const file = $('video').files[0];
@@ -148,32 +175,65 @@
     $('err').textContent = msg;
     if (msg) return;
 
-    busy(true, 'Menyiapkan unggahan...'); $('fill').style.width = '0';
+    const me = ++runId; uploading = true; state = null;
+    lockForm(true); $('kirim').hidden = true; $('prog').hidden = false; $('btnKirim').hidden = true;
+    setProg(0, 'Menyiapkan unggahan...');
     try {
       const s = await call('mulai', { d: d, m: { name: file.name, type: file.type, size: file.size } });
+      if (me !== runId) return;
       if (!s.ok) throw new Error(s.message);
       let start = 0, fileId = '';
       while (start < file.size) {
         const end = Math.min(start + CHUNK, file.size);
         const r = await call('chunk', { url: s.sessionUrl, b64: await b64(file.slice(start, end)), start: start, end: end, total: file.size });
+        if (me !== runId) return;
         if (!r.ok) throw new Error(r.message);
         if (r.fileId) fileId = r.fileId;
         start = end;
-        const p = Math.round(start / file.size * 100);
-        $('fill').style.width = p + '%'; $('pct').textContent = 'Mengunggah ' + p + '%. Jangan tutup halaman ini.';
+        setProg(Math.floor(start / file.size * 100), mb(start) + ' dari ' + mb(file.size) + '. Jangan tutup halaman ini.');
       }
-      if (!fileId) throw new Error('Unggahan belum selesai. Coba lagi.');
-      $('pct').textContent = 'Menyimpan data...';
-      const f = await call('selesai', { d: d, fileId: fileId });
-      if (!f.ok) throw new Error(f.message);
-      busy(false); $('formCard').hidden = true; $('done').hidden = false; window.scrollTo(0, 0);
+      if (!fileId) throw new Error('Unggahan belum selesai.');
+      uploading = false; state = { d: d, fileId: fileId };
+      setProg(100, 'Unggahan selesai. Periksa data Anda. Jika sudah benar klik "Kirim data", jika ada yang salah klik "Batalkan".', true);
+      $('btnKirim').hidden = false;
     } catch (er) {
-      busy(false); $('err').textContent = er.message + ' Silakan coba lagi.';
+      if (me !== runId) return;
+      resetUpload(); $('err').textContent = er.message + ' Silakan coba lagi.';
+    }
+  });
+
+  // Tahap 2: kirim data (baru dicatat ke spreadsheet di sini)
+  $('btnKirim').addEventListener('click', async function () {
+    if (!state) return;
+    $('btnKirim').disabled = true; $('btnBatal').disabled = true; $('btnKirim').textContent = 'Mengirim...'; $('err').textContent = '';
+    try {
+      const f = await call('selesai', { d: state.d, fileId: state.fileId });
+      if (!f.ok) throw new Error(f.message);
+      state = null; $('formCard').hidden = true; $('done').hidden = false; window.scrollTo(0, 0);
+    } catch (er) {
+      $('btnKirim').disabled = false; $('btnBatal').disabled = false; $('btnKirim').textContent = 'Kirim data';
+      $('err').textContent = er.message + ' Silakan coba lagi.';
+    }
+  });
+
+  // Batalkan: hentikan unggahan, atau hapus video yang sudah terunggah
+  $('btnBatal').addEventListener('click', async function () {
+    if (uploading) { runId++; resetUpload(); $('err').textContent = 'Unggahan dibatalkan.'; return; }
+    if (!state) return;
+    if (!confirm('Batalkan unggahan? Video akan dihapus dan Anda bisa mengisi ulang.')) return;
+    $('btnBatal').disabled = true; $('btnKirim').disabled = true; $('btnBatal').textContent = 'Membatalkan...';
+    try {
+      const r = await call('batal', { fileId: state.fileId });
+      if (!r.ok) throw new Error(r.message);
+      resetUpload(); $('err').textContent = 'Unggahan dibatalkan dan video sudah dihapus.';
+    } catch (er) {
+      $('btnBatal').disabled = false; $('btnKirim').disabled = false; $('btnBatal').textContent = 'Batalkan';
+      $('err').textContent = 'Gagal membatalkan: ' + er.message;
     }
   });
 
   $('lagi').addEventListener('click', function () {
-    $('form').reset(); $('err').textContent = '';
+    $('form').reset(); resetUpload(); $('err').textContent = '';
     $('done').hidden = true; $('formCard').hidden = false;
   });
 
