@@ -130,14 +130,20 @@
   const CHUNK = 3 * 1024 * 1024; // kelipatan 256 KB
   const call = async function (action, payload) {
     const r = await fetch(API, { method: 'POST', body: JSON.stringify(Object.assign({ action: action }, payload)) });
-    return r.json();
+    try { return await r.json(); }
+    catch (x) { throw new Error('Server tidak merespons dengan benar. Periksa koneksi internet.'); }
   };
   const b64 = function (blob) {
     return new Promise(function (ok, no) {
       const r = new FileReader();
       r.onload = function () { ok(String(r.result).split(',')[1]); };
-      r.onerror = no; r.readAsDataURL(blob);
+      r.onerror = function () { no(new Error('Video tidak bisa dibaca dari perangkat. Pastikan video sudah tersimpan penuh di HP/laptop dan jangan dipindah atau diedit saat diunggah.')); };
+      r.readAsDataURL(blob);
     });
+  };
+  const baca = async function (blob) {
+    try { return await b64(blob); }
+    catch (x) { await new Promise(function (r) { setTimeout(r, 800); }); return b64(blob); }
   };
   let uploading = false, state = null, runId = 0;
   const mb = function (n) { return (n / 1048576).toFixed(1) + ' MB'; };
@@ -185,7 +191,7 @@
       let start = 0, fileId = '';
       while (start < file.size) {
         const end = Math.min(start + CHUNK, file.size);
-        const r = await call('chunk', { url: s.sessionUrl, b64: await b64(file.slice(start, end)), start: start, end: end, total: file.size });
+        const r = await call('chunk', { url: s.sessionUrl, b64: await baca(file.slice(start, end)), start: start, end: end, total: file.size });
         if (me !== runId) return;
         if (!r.ok) throw new Error(r.message);
         if (r.fileId) fileId = r.fileId;
@@ -198,7 +204,7 @@
       $('btnKirim').hidden = false;
     } catch (er) {
       if (me !== runId) return;
-      resetUpload(); $('err').textContent = er.message + ' Silakan coba lagi.';
+      resetUpload(); $('err').textContent = ((er && er.message) || 'Terjadi kesalahan.') + ' Silakan coba lagi.';
     }
   });
 
@@ -212,7 +218,7 @@
       state = null; $('formCard').hidden = true; $('done').hidden = false; window.scrollTo(0, 0);
     } catch (er) {
       $('btnKirim').disabled = false; $('btnBatal').disabled = false; $('btnKirim').textContent = 'Kirim data';
-      $('err').textContent = er.message + ' Silakan coba lagi.';
+      $('err').textContent = ((er && er.message) || 'Terjadi kesalahan.') + ' Silakan coba lagi.';
     }
   });
 
@@ -228,13 +234,20 @@
       resetUpload(); $('err').textContent = 'Unggahan dibatalkan dan video sudah dihapus.';
     } catch (er) {
       $('btnBatal').disabled = false; $('btnKirim').disabled = false; $('btnBatal').textContent = 'Batalkan';
-      $('err').textContent = 'Gagal membatalkan: ' + er.message;
+      $('err').textContent = 'Gagal membatalkan: ' + ((er && er.message) || 'Terjadi kesalahan.');
     }
   });
 
   $('lagi').addEventListener('click', function () {
     $('form').reset(); resetUpload(); $('err').textContent = '';
     $('done').hidden = true; $('formCard').hidden = false;
+  });
+
+  // Cek dini: apakah video bisa dibaca perangkat, sebelum siswa menekan Unggah
+  $('video').addEventListener('change', function () {
+    const f = $('video').files[0]; if (!f) return;
+    b64(f.slice(0, 1024)).then(function () { $('err').textContent = ''; })
+      .catch(function (er) { $('video').value = ''; $('err').textContent = er.message + ' Pilih ulang video dari File/Unduhan.'; });
   });
 
   function init(c) {
